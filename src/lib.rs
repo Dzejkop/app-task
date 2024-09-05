@@ -1,12 +1,10 @@
 use std::any::Any;
-use std::borrow::Cow;
 use std::fmt::Display;
-use std::panic::UnwindSafe;
 use std::sync::Arc;
 
 use backoff_strategy::constant_time::ConstantTimeBackoff;
 use backoff_strategy::{BackoffStrategy, DefaultStrategyFactory, StrategyFactory};
-use futures::{Future, FutureExt};
+use futures::Future;
 use tokio::task::JoinHandle;
 
 pub mod backoff_strategy;
@@ -65,7 +63,7 @@ where
     where
         S: ToString,
         C: Fn(Arc<T>) -> F + Send + Sync + 'static,
-        F: Future<Output = Result<(), E>> + Send + 'static + UnwindSafe,
+        F: Future<Output = Result<(), E>> + Send + 'static,
         E: Display + Send + Sync,
     {
         let app = self.app.clone();
@@ -77,37 +75,22 @@ where
             loop {
                 tracing::info!(task_label = label, "Running task");
 
-                let result = task(app.clone()).catch_unwind().await;
+                let result = task(app.clone()).await;
 
                 match result {
-                    Ok(Ok(())) => {
+                    Ok(()) => {
                         tracing::info!(task_label = label, "Task finished");
                         break;
                     }
-                    Ok(Err(err)) => {
+                    Err(err) => {
                         tracing::error!(task_label = label, error = %err, "Task failed");
                         backoff_strategy.add_failure();
                         tokio::time::sleep(backoff_strategy.next_backoff()).await;
-                    }
-                    Err(err) => {
-                        let reason = panic_helper(&err);
-                        tracing::error!(task_label = label, error = %reason, "Task panicked");
-                        return Err(err);
                     }
                 }
             }
 
             Ok(())
         })
-    }
-}
-
-pub fn panic_helper(err: &Box<dyn Any + Send>) -> Cow<'_, str> {
-    if let Some(err) = err.downcast_ref::<&str>() {
-        Cow::Borrowed(*err)
-    } else if let Some(err) = err.downcast_ref::<String>() {
-        Cow::Owned(err.clone())
-    } else {
-        Cow::Borrowed("unknown panic reason")
     }
 }
