@@ -18,8 +18,8 @@ async fn main() {
     let basic_handle = runner.spawn_task("Basic task", task);
     let fails_once_handle = runner.spawn_task("Fails once task", fails_once);
 
-    basic_handle.await.unwrap();
-    fails_once_handle.await.unwrap();
+    basic_handle.await.unwrap().unwrap();
+    fails_once_handle.await.unwrap().unwrap();
 }
 
 async fn task(state: Arc<State>) -> eyre::Result<()> {
