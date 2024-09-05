@@ -20,11 +20,17 @@ pub struct DefaultStrategyFactory<S> {
     _strategy: PhantomData<S>,
 }
 
-impl<S> DefaultStrategyFactory<S> {
-    pub fn new() -> Self {
+impl<S> Default for DefaultStrategyFactory<S> {
+    fn default() -> Self {
         Self {
             _strategy: PhantomData,
         }
+    }
+}
+
+impl<S> DefaultStrategyFactory<S> {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
