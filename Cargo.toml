@@ -1,9 +1,11 @@
 [package]
 name = "app-task"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 description = "A simple tokio task manager"
 license = "MIT"
+repository = "https://github.com/Dzejkop/app-task"
+documentation = "https://docs.rs/app-task"
 
 [dependencies]
 futures = "0.3"
