@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::fmt::Display;
 use std::sync::Arc;
 
@@ -55,11 +54,7 @@ where
     /// If the task returns an error, it will be logged and the task will be retried with a backoff.
     ///
     /// If the task panics, the panic output will be returned as an error.
-    pub fn spawn_task<S, C, F, E>(
-        &self,
-        label: S,
-        task: C,
-    ) -> JoinHandle<Result<(), Box<dyn Any + Send>>>
+    pub fn spawn_task<S, C, F, E>(&self, label: S, task: C) -> JoinHandle<()>
     where
         S: ToString,
         C: Fn(Arc<T>) -> F + Send + Sync + 'static,
@@ -89,8 +84,6 @@ where
                     }
                 }
             }
-
-            Ok(())
         })
     }
 }

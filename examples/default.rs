@@ -1,5 +1,10 @@
+use core::panic;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
+
+use futures::stream::FuturesUnordered;
+use futures::StreamExt;
 
 struct State {
     counter: AtomicUsize,
@@ -15,11 +20,15 @@ async fn main() {
 
     let runner = app_task::TaskRunner::new(state);
 
-    let basic_handle = runner.spawn_task("Basic task", task);
-    let fails_once_handle = runner.spawn_task("Fails once task", fails_once);
+    let mut handles = FuturesUnordered::new();
 
-    basic_handle.await.unwrap().unwrap();
-    fails_once_handle.await.unwrap().unwrap();
+    handles.push(runner.spawn_task("Basic task", task));
+    handles.push(runner.spawn_task("Fails once task", fails_once));
+    handles.push(runner.spawn_task("Panics task", panics));
+
+    while let Some(handle) = handles.next().await {
+        handle.expect("A task panicked");
+    }
 }
 
 async fn task(state: Arc<State>) -> eyre::Result<()> {
@@ -40,4 +49,10 @@ async fn fails_once(state: Arc<State>) -> eyre::Result<()> {
     }
 
     Ok(())
+}
+
+async fn panics(_state: Arc<State>) -> eyre::Result<()> {
+    tokio::time::sleep(Duration::from_secs(7)).await;
+
+    panic!("Task panicked");
 }
